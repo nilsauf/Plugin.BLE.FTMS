@@ -1,0 +1,44 @@
+<Project>
+
+  <PropertyGroup>
+  	<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+  	<ImplicitUsings>enable</ImplicitUsings>
+  	<Nullable>enable</Nullable>
+	<IsTestProject>$(MSBuildProjectName.Contains('.Test'))</IsTestProject>
+	<SolutionDir Condition="'$(SolutionDir)' == ''">$(MSBuildThisFileDirectory)</SolutionDir>
+	<LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+  	<Authors>Nils Aufschläger</Authors>
+  	<Owners>Nils Aufschläger</Owners>
+  	<Copyright>Copyright (c) Nils Aufschläger 2025</Copyright>
+  	<PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+  	<PackageProjectUrl>https://github.com/nilsauf/Plugin.BLE.FTMS</PackageProjectUrl>
+  	<PackageIconUrl></PackageIconUrl>
+  	<PackageTags>FTMS;Fitness Maschine Service;Bluetooth Low Energy;BLE</PackageTags>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+  	<PackageReleaseNotes>https://github.com/nilsauf/Plugin.BLE.FTMS/releases</PackageReleaseNotes>
+  	<RepositoryUrl>https://github.com/nilsauf/Plugin.BLE.FTMS</RepositoryUrl>
+  	<RepositoryType>git</RepositoryType>
+  
+  	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  	<!-- Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+  	<PublishRepositoryUrl>true</PublishRepositoryUrl>
+  	<!-- Embed source files that are not tracked by the source control manager in the PDB -->
+  	<EmbedUntrackedSources>true</EmbedUntrackedSources>
+  	<!-- Include PDB in the built .nupkg -->
+  	<IncludeSymbols>true</IncludeSymbols>
+  	<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" />
+	<None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="" Condition="!$(IsTestProject)"/>
+  </ItemGroup>
+	
+  <ItemGroup>
+	  <PackageReference Include="GitVersion.MsBuild" Version="6.1.0" PrivateAssets="all" />
+  </ItemGroup>
+	
+</Project>
