@@ -1,0 +1,94 @@
+name: CICD
+
+on:
+  push: 
+    branches: [ '**' ]
+  release:
+    types: [ published ]
+
+env:
+  configuration: ${{ github.event.release.tag_name != '' && 'Release' || 'Debug' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v4.1.0
+      with:
+        dotnet-version: |
+          8.0.x
+          9.0.x
+
+    - name: Restore
+      run: dotnet restore
+      working-directory: .
+
+    - name: Build
+      run: dotnet build -v:minimal --no-restore -c:${{ env.configuration }} 
+      working-directory: .
+
+    #- name: Run Unit Tests
+    #  run: dotnet test --no-build -c:${{ env.configuration }} -p:CollectCoverage=true -p:CoverletOutputFormat=cobertura -p:CoverletOutput="./artifacts/coverage/coverage.xml" -p:Include="[${{ env.productNamespacePrefix}}*]*"
+    #  working-directory: .
+
+    - name: Pack
+      run: dotnet pack -v:minimal --no-restore --no-build -c:${{ env.configuration }}
+      working-directory: .
+
+    - name: Create NuGet Artifacts
+      uses: actions/upload-artifact@master
+      with:
+        name: nuget
+        path: '**/*.nupkg'
+
+  updateRelease:
+    if: github.event.release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    #- name: Checkout
+    #  uses: actions/checkout@v4
+    #  with:
+    #    fetch-depth: 0
+    #
+    #- name: Changelog
+    #  uses: glennawatson/ChangeLog@v1
+    #  id: changelog
+    
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget
+
+    - name: Upload Files
+      env:
+        RELEASE_TAG: ${{ github.event.release.id }}
+        NUGET_FILES: '**/*.nupkg'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh release upload "$RELEASE_TAG" "$NUGET_FILES"
+     
+  publish:
+    if: ${{ startsWith(github.ref, 'refs/heads/release') || github.ref == 'refs/heads/main' || github.event.release }}
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget  
+    
+    - name: NuGet Push
+      env:
+        NUGET_AUTH_TOKEN: ${{ secrets.NUGET_API_KEY }} # Set nuget api token in repository secrets
+        SOURCE_URL: https://api.nuget.org/v3/index.json
+      run: |
+        dotnet nuget push -s ${{ env.SOURCE_URL }} -k ${{ env.NUGET_AUTH_TOKEN }} **/*.nupkg
