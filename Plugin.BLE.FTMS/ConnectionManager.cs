@@ -13,7 +13,7 @@ using System.Reactive.Subjects;
 public sealed class ConnectionManager : IDisposable, IConnectionManager
 {
 	private readonly SerialDisposable scanDisposable = new();
-	private readonly CancellationDisposable observableDisposable = new();
+	private readonly CancellationDisposable cancellationDisposable = new();
 	private readonly SourceCache<IDevice, Guid> devicesCache = new(d => d.Id);
 	private readonly BehaviorSubject<IDevice?> connectedDevice = new(null);
 	private readonly IBluetoothLE bluetoothLE;
@@ -32,7 +32,7 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 
 		this.bluetoothAvailability = this.bluetoothLE.Events()
 			.StateChanged
-			.TakeUntil(this.observableDisposable.Token)
+			.TakeUntil(this.cancellationDisposable.Token)
 			.Select(args => args.NewState)
 			.StartWith(this.bluetoothLE.State)
 			.Select(state => state == BluetoothState.On)
@@ -118,7 +118,7 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 
 	public void Dispose()
 	{
-		this.observableDisposable.Dispose();
+		this.cancellationDisposable.Dispose();
 		this.scanDisposable.Dispose();
 		this.devicesCache.Dispose();
 		this.connectedDevice.Dispose();
