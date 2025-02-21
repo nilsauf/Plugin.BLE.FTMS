@@ -8,17 +8,22 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 public sealed class ConnectionManager : IDisposable, IConnectionManager
 {
 	private readonly SerialDisposable scanDisposable = new();
 	private readonly CancellationDisposable observableDisposable = new();
 	private readonly SourceCache<IDevice, Guid> devicesCache = new(d => d.Id);
+	private readonly BehaviorSubject<IDevice?> connectedDevice = new(null);
 	private readonly IBluetoothLE bluetoothLE;
 	private readonly IAdapter adapter;
 	private readonly IObservable<bool> bluetoothAvailability;
 
-	public IDevice? ConnectedDevice { get; private set; }
+	public IDevice? ConnectedDevice => this.connectedDevice.Value;
+
+	public IObservableCache<IDevice, Guid> Devices
+		=> this.devicesCache.AsObservableCache();
 
 	public ConnectionManager(IBluetoothLE bluetoothLE, IAdapter adapter)
 	{
@@ -35,10 +40,10 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 			.RefCount();
 	}
 
-	public IObservableCache<IDevice, Guid> Devices
-		=> this.devicesCache.AsObservableCache();
+	public IObservable<IDevice?> ObserveConnectedDevice()
+		=> this.connectedDevice.AsObservable();
 
-	public IObservable<bool> GetBluetoothAvailability()
+	public IObservable<bool> ObserveBluetoothAvailability()
 		=> this.bluetoothAvailability.AsObservable();
 
 	public void StartScanning(ScanFilterOptions? scanFilterOptions = null, Func<IDevice, bool>? deviceFilter = null)
@@ -79,27 +84,22 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 		}
 
 		return await Observable.Return(device)
-			.SelectMany(async d =>
+			.SelectMany(async device =>
 			{
-				await ConnectCore(d);
-				return this.ConnectedDevice;
+				Debug.WriteLine($"{DateTime.Now} - Start Connecting to {device.Name}");
+				await this.adapter.ConnectToDeviceAsync(device);
+				Debug.WriteLine($"{DateTime.Now} - Connected to {device.Name}!");
+				return device;
 			})
-			.Catch<IDevice?, Exception>(ex =>
+			.Catch((Exception ex) =>
 			{
 				Debug.WriteLine($"{DateTime.Now} - Exception: {ex.GetType().Name} - Message: {ex.Message}");
 				return Observable.Throw<IDevice>(ex);
 			})
 			.Retry(10)
+			.Do(this.connectedDevice.OnNext)
 			.Select(connectedDevice => connectedDevice is not null)
 			.FirstAsync();
-
-		async Task ConnectCore(IDevice device)
-		{
-			Debug.WriteLine($"{DateTime.Now} - Start Connecting to {device.Name}");
-			await this.adapter.ConnectToDeviceAsync(device);
-			this.ConnectedDevice = device;
-			Debug.WriteLine($"{DateTime.Now} - Connected!");
-		}
 	}
 
 	public async Task Disconnect()
@@ -110,7 +110,7 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 		Debug.WriteLine($"{DateTime.Now} - Start Disconnecting from {this.ConnectedDevice.Name}");
 
 		var deviceToDisconnect = this.ConnectedDevice;
-		this.ConnectedDevice = null;
+		this.connectedDevice.OnNext(null);
 		await this.adapter.DisconnectDeviceAsync(deviceToDisconnect);
 
 		Debug.WriteLine($"{DateTime.Now} - Disconnected!");
@@ -121,5 +121,6 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 		this.observableDisposable.Dispose();
 		this.scanDisposable.Dispose();
 		this.devicesCache.Dispose();
+		this.connectedDevice.Dispose();
 	}
 }

@@ -12,7 +12,8 @@ public interface IConnectionManager
 	IDevice? ConnectedDevice { get; }
 	Task<bool> Connect(Guid deviceId);
 	Task Disconnect();
-	IObservable<bool> GetBluetoothAvailability();
+	IObservable<bool> ObserveBluetoothAvailability();
+	IObservable<IDevice?> ObserveConnectedDevice();
 	void StartScanning(ScanFilterOptions? scanFilterOptions = null, Func<IDevice, bool>? deviceFilter = null);
 	void StopScanning();
 }
