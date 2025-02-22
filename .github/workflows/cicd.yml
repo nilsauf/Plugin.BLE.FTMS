@@ -64,17 +64,17 @@ jobs:
     #  id: changelog
     
     - name: Download NuGet Packages
+      id: nugetDownload
       uses: actions/download-artifact@v4
       with:
         name: nuget
 
     - name: Upload Files
       env:
-        RELEASE_TAG: ${{ github.event.release.id }}
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
+        NUGET_FILES: ${{ steps.nugetDownload.outputs.download-path }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        NUGET_FILES=$(find . -name '*.nupkg')
-        gh release upload "$RELEASE_TAG" $NUGET_FILES
+      run: gh release upload "$RELEASE_TAG" $NUGET_FILES
      
   publish:
     if: ${{ startsWith(github.ref, 'refs/heads/release') || github.ref == 'refs/heads/main' || github.event.release }}
