@@ -71,7 +71,7 @@ jobs:
     - name: Upload Files
       env:
         RELEASE_TAG: ${{ github.event.release.tag_name }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         NUGET_FILES=$(find . -name '*.nupkg')
         gh release upload "$RELEASE_TAG" $NUGET_FILES
