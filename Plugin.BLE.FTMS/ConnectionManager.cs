@@ -1,5 +1,6 @@
 ﻿namespace Plugin.BLE.FTMS;
 using DynamicData;
+using global::FTMS.NET;
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using ReactiveMarbles.ObservableEvents;
@@ -16,6 +17,7 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 	private readonly CancellationDisposable cancellationDisposable = new();
 	private readonly SourceCache<IDevice, Guid> devicesCache = new(d => d.Id);
 	private readonly BehaviorSubject<IDevice?> connectedDevice = new(null);
+	private readonly IObservable<IFitnessMachineServiceConnection?> currentServiceConnection;
 	private readonly IBluetoothLE bluetoothLE;
 	private readonly IAdapter adapter;
 	private readonly IObservable<bool> bluetoothAvailability;
@@ -38,6 +40,13 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 			.Select(state => state == BluetoothState.On)
 			.Replay(1)
 			.RefCount();
+
+		this.currentServiceConnection = this.connectedDevice
+			.SelectMany(connectedDevice => connectedDevice is null ?
+				Task.FromResult<IFitnessMachineServiceConnection>(null!) :
+				connectedDevice.CreateConnectionAsync())
+			.Replay(1)
+			.AutoConnect();
 	}
 
 	public IObservable<IDevice?> ObserveConnectedDevice()
@@ -45,6 +54,9 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 
 	public IObservable<bool> ObserveBluetoothAvailability()
 		=> this.bluetoothAvailability.AsObservable();
+
+	public IObservable<IFitnessMachineServiceConnection?> ObserveCurrentServiceConnection()
+		=> this.currentServiceConnection.AsObservable();
 
 	public void StartScanning(ScanFilterOptions? scanFilterOptions = null, Func<IDevice, bool>? deviceFilter = null)
 	{
