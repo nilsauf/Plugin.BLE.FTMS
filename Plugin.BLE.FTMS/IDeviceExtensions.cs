@@ -10,12 +10,12 @@ public static class IDeviceExtensions
 {
 	public static async Task<IFitnessMachineService> GetFitnessMachineServiceAsync(this IDevice device)
 	{
-		var connection = await device.CreateConnection();
+		var connection = await device.CreateConnectionAsync();
 
 		return await connection.CreateFitnessMachineServiceAsync();
 	}
 
-	public static async Task<IFitnessMachineServiceConnection> CreateConnection(this IDevice device)
+	public static async Task<IFitnessMachineServiceConnection> CreateConnectionAsync(this IDevice device)
 	{
 		ArgumentNullException.ThrowIfNull(device);
 
