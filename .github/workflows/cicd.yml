@@ -71,9 +71,10 @@ jobs:
     - name: Upload Files
       env:
         RELEASE_TAG: ${{ github.event.release.id }}
-        NUGET_FILES: '**/*.nupkg'
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: gh release upload "$RELEASE_TAG" "$NUGET_FILES"
+      run: |
+        NUGET_FILES=$(find . -name '*.nupkg')
+        gh release upload "$RELEASE_TAG" $NUGET_FILES
      
   publish:
     if: ${{ startsWith(github.ref, 'refs/heads/release') || github.ref == 'refs/heads/main' || github.event.release }}
