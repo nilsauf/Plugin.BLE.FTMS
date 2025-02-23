@@ -128,6 +128,7 @@ public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 				return Observable.Throw<IDevice>(ex);
 			})
 			.Retry(maxExceptionCount)
+			.Catch(Observable.Return<IDevice?>(null))
 			.Do(this.connectedDevice.OnNext)
 			.Select(connectedDevice => connectedDevice is not null)
 			.FirstAsync();
