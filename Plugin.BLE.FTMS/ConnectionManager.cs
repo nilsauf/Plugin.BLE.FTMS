@@ -45,6 +45,13 @@ public sealed class ConnectionManager : IDisposable, IConnectionManager
 			.SelectMany(connectedDevice => connectedDevice is null ?
 				Task.FromResult<IFitnessMachineServiceConnection>(null!) :
 				connectedDevice.CreateConnectionAsync())
+			.Catch((Exception ex) =>
+			{
+				Debug.WriteLine(ex.Message);
+				return Observable.Throw<IFitnessMachineServiceConnection>(ex);
+			})
+			.Retry(10)
+			.Catch((Exception ex) => Observable.Return<IFitnessMachineServiceConnection>(null!))
 			.Replay(1)
 			.AutoConnect();
 	}
