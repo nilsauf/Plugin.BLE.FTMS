@@ -2,7 +2,6 @@
 using DynamicData;
 using global::FTMS.NET;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using ReactiveMarbles.ObservableEvents;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 
 public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 {
@@ -19,7 +19,6 @@ public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 	private readonly SourceCache<IDevice, Guid> devicesCache = new(d => d.Id);
 	private readonly BehaviorSubject<IDevice?> connectedDevice = new(null);
 	private readonly IObservable<IFitnessMachineServiceConnection?> currentServiceConnection;
-	private readonly IBluetoothLE bluetoothLE;
 	private readonly IAdapter adapter;
 	private readonly ILogger<ConnectionManager> logger;
 	private readonly IObservable<bool> bluetoothAvailability;
@@ -32,34 +31,33 @@ public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 	public ConnectionManager(
 		IBluetoothLE bluetoothLE,
 		IAdapter adapter,
-		ILogger<ConnectionManager>? logger = null)
+		ILoggerFactory? loggerFactory = null)
 	{
-		this.bluetoothLE = bluetoothLE;
 		this.adapter = adapter;
-		this.logger = logger ?? NullLogger<ConnectionManager>.Instance;
+		this.logger = loggerFactory.ChreateLoggerSafely<ConnectionManager>();
 
-		this.bluetoothAvailability = this.bluetoothLE.Events()
+		this.bluetoothAvailability = bluetoothLE.Events()
 			.StateChanged
 			.TakeUntil(this.cancellationDisposable.Token)
 			.Select(args => args.NewState)
-			.StartWith(this.bluetoothLE.State)
-			.Select(state => state == BluetoothState.On)
+			.StartWith(bluetoothLE.State)
+			.Select(state => state is BluetoothState.On)
 			.Replay(1)
 			.RefCount();
 
 		this.currentServiceConnection = this.connectedDevice
 			.SelectMany(connectedDevice => connectedDevice is null ?
 				Task.FromResult<IFitnessMachineServiceConnection>(null!) :
-				connectedDevice.CreateConnectionAsync())
+				connectedDevice.CreateConnectionAsync(loggerFactory))
 			.Catch((Exception ex) =>
 			{
 				this.LogExceptionDuringCreationOfFtmsConnection(ex);
 				return Observable.Throw<IFitnessMachineServiceConnection>(ex);
 			})
 			.Retry(10)
-			.Catch((Exception ex) => Observable.Return<IFitnessMachineServiceConnection>(null!))
+			.RetryWhen(exceptions => exceptions.SelectMany(_ => this.Disconnect().ToObservable()))
 			.Replay(1)
-			.AutoConnect();
+			.AutoConnect(onConnect: sub => this.cancellationDisposable.Token.Register(sub.Dispose));
 	}
 
 	public IObservable<IDevice?> ObserveConnectedDevice()
