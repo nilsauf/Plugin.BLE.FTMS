@@ -6,9 +6,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 
-internal static class ObservableExtensions
+public static class ObservableExtensions
 {
-	public static IObservable<T> TakeUntil<T>(this IObservable<T> source, CancellationToken cancellationToken)
+	internal static IObservable<T> TakeUntil<T>(this IObservable<T> source, CancellationToken cancellationToken)
 		=> Observable.Create<T>(observer =>
 		{
 			if (cancellationToken.IsCancellationRequested)
