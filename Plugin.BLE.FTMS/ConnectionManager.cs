@@ -10,7 +10,6 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Reactive.Threading.Tasks;
 
 public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 {
@@ -49,13 +48,6 @@ public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 			.SelectMany(connectedDevice => connectedDevice is null ?
 				Task.FromResult<IFitnessMachineServiceConnection>(null!) :
 				connectedDevice.CreateConnectionAsync(loggerFactory))
-			.Catch((Exception ex) =>
-			{
-				this.LogExceptionDuringCreationOfFtmsConnection(ex);
-				return Observable.Throw<IFitnessMachineServiceConnection>(ex);
-			})
-			.Retry(10)
-			.RetryWhen(exceptions => exceptions.SelectMany(_ => this.Disconnect().ToObservable()))
 			.Replay(1)
 			.AutoConnect(onConnect: sub => this.cancellationDisposable.Token.Register(sub.Dispose));
 	}
@@ -178,6 +170,9 @@ public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 	[LoggerMessage(LogLevel.Information, "Disconnected from {deviceName}")]
 	private partial void LogDisconnected(string deviceName);
 
-	[LoggerMessage(LogLevel.Error, "Exception during creation of FTMS Connection!")]
-	private partial void LogExceptionDuringCreationOfFtmsConnection(Exception exception);
+	[LoggerMessage(LogLevel.Error, "Exception #{exceptionCount}/{maxExceptionCount} during creation of FTMS Connection!")]
+	internal partial void LogExceptionDuringCreationOfFtmsConnection(Exception exception, int exceptionCount, int maxExceptionCount);
+
+	[LoggerMessage(LogLevel.Error, "MaxExceptionCount of {maxExceptionCount} reached! Disconnecting now!")]
+	internal partial void LogMaxExceptionCountReached(int maxExceptionCount);
 }
