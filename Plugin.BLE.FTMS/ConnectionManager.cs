@@ -58,8 +58,10 @@ public sealed partial class ConnectionManager : IDisposable, IConnectionManager
 	public IObservable<bool> ObserveBluetoothAvailability()
 		=> this.bluetoothAvailability.AsObservable();
 
-	public IObservable<IFitnessMachineServiceConnection?> ObserveCurrentServiceConnection(int maxExceptionCountTillDisconnect = -1)
-		=> this.RetryAndDisconnect(cm => cm.currentServiceConnection.AsObservable(), maxExceptionCountTillDisconnect);
+	public IObservable<T> ObserveCurrentServiceConnection<T>(
+			Func<IObservable<IFitnessMachineServiceConnection?>, IObservable<T>> sourceFactory,
+			int maxExceptionCountTillDisconnect = -1)
+		=> this.RetryAndDisconnect(cm => sourceFactory(cm.currentServiceConnection.AsObservable()), maxExceptionCountTillDisconnect);
 
 	public void StartScanning(ScanFilterOptions? scanFilterOptions = null, Func<IDevice, bool>? deviceFilter = null)
 	{
