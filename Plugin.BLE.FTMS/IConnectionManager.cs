@@ -15,7 +15,7 @@ public interface IConnectionManager
 	Task Disconnect();
 	IObservable<bool> ObserveBluetoothAvailability();
 	IObservable<IDevice?> ObserveConnectedDevice();
-	IObservable<IFitnessMachineServiceConnection?> ObserveCurrentServiceConnection();
+	IObservable<IFitnessMachineServiceConnection?> ObserveCurrentServiceConnection(int maxExceptionCountTillDisconnect = -1);
 	void StartScanning(ScanFilterOptions? scanFilterOptions = null, Func<IDevice, bool>? deviceFilter = null);
 	void StopScanning();
 }

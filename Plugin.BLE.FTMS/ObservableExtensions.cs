@@ -23,39 +23,35 @@ public static class ObservableExtensions
 				sub);
 		});
 
-	public static IObservable<T> RetryAndDisconnect<T>(
-		this IObservable<T> source,
-		IConnectionManager externalManager,
-		int maxExceptionCount = 10)
-	{
-		if (externalManager is not ConnectionManager connectionManager)
-		{
-			throw new InvalidOperationException("The external manager is not a ConnectionManager.");
-		}
-
-		return source.RetryWhen(exceptions => exceptions
-			.SelectMany((exception, index) =>
-			{
-				connectionManager.LogExceptionDuringCreationOfFtmsConnection(
-					exception,
-					index,
-					maxExceptionCount);
-				return Observable
-					.Timer(TimeSpan.FromSeconds(1) * index)
-					.Select(_ => Unit.Default);
-			})
-			.Take(maxExceptionCount - 1)
-			.Concat(exceptions
-				.FirstAsync()
-				.SelectMany(exception =>
+	internal static IObservable<T> RetryAndDisconnect<T>(
+			this ConnectionManager connectionManager,
+			Func<ConnectionManager, IObservable<T>> sourceFactory,
+			int maxExceptionCount = 10)
+		=> maxExceptionCount > 0 ? 
+			sourceFactory(connectionManager)
+				.RetryWhen(exceptions => exceptions
+				.SelectMany((exception, index) =>
 				{
 					connectionManager.LogExceptionDuringCreationOfFtmsConnection(
 						exception,
-						maxExceptionCount,
+						index,
 						maxExceptionCount);
-					connectionManager.LogMaxExceptionCountReached(maxExceptionCount);
-					return connectionManager.Disconnect().ToObservable();
-				}))
-			.Repeat());
-	}
+					return Observable
+						.Timer(TimeSpan.FromSeconds(1) * index)
+						.Select(_ => Unit.Default);
+				})
+				.Take(maxExceptionCount - 1)
+				.Concat(exceptions
+					.FirstAsync()
+					.SelectMany(exception =>
+					{
+						connectionManager.LogExceptionDuringCreationOfFtmsConnection(
+							exception,
+							maxExceptionCount,
+							maxExceptionCount);
+						connectionManager.LogMaxExceptionCountReached(maxExceptionCount);
+						return connectionManager.Disconnect().ToObservable();
+					}))
+				.Repeat()) :
+			sourceFactory(connectionManager);
 }
