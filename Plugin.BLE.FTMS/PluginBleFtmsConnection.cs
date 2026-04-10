@@ -8,9 +8,9 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 internal sealed partial class PluginBleFtmsConnection(
-	AdvertisementRecord serviceData,
-	IService ftmsService,
-	ILoggerFactory? loggerFactory = null)
+		AdvertisementRecord serviceData,
+		IService ftmsService,
+		ILoggerFactory? loggerFactory = null)
 	: IFitnessMachineServiceConnection
 {
 	private readonly ILogger logger = loggerFactory.ChreateLoggerSafely<PluginBleFtmsConnection>();

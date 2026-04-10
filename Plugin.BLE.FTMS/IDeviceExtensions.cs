@@ -14,7 +14,6 @@ public static class IDeviceExtensions
 		ILoggerFactory? loggerFactory = null)
 	{
 		var connection = await device.CreateConnectionAsync(loggerFactory);
-
 		return await connection.CreateFitnessMachineServiceAsync();
 	}
 

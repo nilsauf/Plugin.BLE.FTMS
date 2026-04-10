@@ -1,4 +1,5 @@
 ﻿namespace Plugin.BLE.FTMS;
+
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using ReactiveMarbles.ObservableEvents;
