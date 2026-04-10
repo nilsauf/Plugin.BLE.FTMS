@@ -1,7 +1,6 @@
 ﻿namespace Plugin.BLE.FTMS;
 
 using DynamicData;
-using global::FTMS.NET;
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;
 using System;

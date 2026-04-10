@@ -1,5 +1,5 @@
 ﻿namespace Plugin.BLE.FTMS;
-using global::FTMS.NET;
+
 using Microsoft.Extensions.Logging;
 using Plugin.BLE.Abstractions;
 using Plugin.BLE.Abstractions.Contracts;

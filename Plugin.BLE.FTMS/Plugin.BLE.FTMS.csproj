@@ -11,4 +11,8 @@
     <PackageReference Update="GitVersion.MsBuild" Version="6.7.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="global::FTMS.NET" />
+  </ItemGroup>
+
 </Project>
