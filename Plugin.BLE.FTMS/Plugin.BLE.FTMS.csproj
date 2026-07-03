@@ -8,7 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="GitVersion.MsBuild" Version="6.8.0" />
+    <PackageReference Update="GitVersion.MsBuild" Version="6.8.1" />
   </ItemGroup>
 
   <ItemGroup>
