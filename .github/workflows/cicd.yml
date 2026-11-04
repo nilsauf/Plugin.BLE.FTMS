@@ -82,6 +82,9 @@ jobs:
         gh release upload "$RELEASE_TAG" $NUGET_FILES
      
   publish:
+    permissions:
+      id-token: write
+  
     if: ${{ startsWith(github.ref, 'refs/heads/release') || github.ref == 'refs/heads/main' || github.event.release }}
     needs: build
     runs-on: ubuntu-latest
